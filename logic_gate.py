@@ -8,7 +8,7 @@
 import sys
 import numpy as np
 import matplotlib.pyplot as plt
-import modules.perceptron as pcn
+import perceptron as pcn
 
 # show the learning process using graphs (x1, x2 two-dimensional straight-line graph)
 # draw a straight line (w1 * x1 + w2 * x2 + w0 = 0) from weights of each epoch
