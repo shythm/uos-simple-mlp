@@ -181,3 +181,38 @@ class Layer:
         self._update()
         # return error vector to propagate to the previous layer
         return self.error
+
+# forward propagation with a given layer list
+def forward_all_layers(invec: np.ndarray, layers: list[Layer]) -> np.ndarray:
+    """
+    Performs forward propagation with a given layer list.
+
+    Args:
+        invec (np.ndarray): The input vector.
+        layers (list): The list of layers.
+
+    Returns:
+        np.ndarray: The output vector.
+    """
+    # set input vector
+    layers[0].invec = invec
+    # forward propagation
+    for i in range(len(layers) - 1):
+        layers[i + 1].invec = layers[i].outvec
+    # return output vector
+    return layers[-1].outvec
+
+# backward propagation with a given layer list
+def backward_all_layers(cost_error: np.ndarray, layers: list[Layer]) -> None:
+    """
+    Performs backward propagation with a given layer list.
+
+    Args:
+        error (np.ndarray): The previous error vector.
+        layers (list): The list of layers.
+    """
+    error = cost_error
+
+    # backward propagation
+    for i in range(len(layers) - 1, -1, -1):
+        error = layers[i].backward(error)
