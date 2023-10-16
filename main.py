@@ -1,5 +1,6 @@
 # 2019920037 컴퓨터과학부 이성호
 # 2023-2 Artificial Intelligence Coding #3
+# Experimental Tasks (1) Implement AND, OR, and XOR gates
 # Experimental Tasks (2) Use donut shaped data
 
 import sys
@@ -24,31 +25,57 @@ donut_shaped_y = [
     0, 0, 0, 0, 0, 0, 0, 0, 1
 ]
 
+# gate data
+gate_x = [
+    [0., 0.],
+    [0., 1.],
+    [1., 0.],
+    [1., 1.],
+]
+and_gate_y = [0, 0, 0, 1] # and gate output
+or_gate_y = [0, 1, 1, 1] # or gate output
+xor_gate_y = [0, 1, 1, 0] # xor gate output
+
 if __name__ == '__main__':
     # validation of arguments
-    if len(sys.argv) != 6:
+    if len(sys.argv) != 7:
         print(f'Usage: python {sys.argv[0]} '
-               '[hidden nodes] [learning rate] [activation] [epochs] [check epoch]')
-        print('Example: python donut.py 4 0.1 sigmoid 10000 2000')
+               '[dataset] [hidden nodes] [activation] [learning rate] [epochs] [check epoch]')
+        print(f'Example: python {sys.argv[0]} donut 4 sigmoid 0.1 10000 2000')
         print('Available activation functions: sigmoid, relu, step')
-        print('This program learns the given donut shaped data using two-layer perceptron.')
+        print('Available dataset: donut, and, or, xor')
+        print('This program learns the given data using two-layer perceptron.')
         sys.exit(-1)
 
     # hyperparameters and variables
-    hidden_nodes = int(sys.argv[1]) # ex: 4
-    lr = float(sys.argv[2]) # ex: 0.1
-    activation = sys.argv[3] # ex: sigmoid
-    epochs = int(sys.argv[4]) # ex: 10000
-    check_epoch = int(sys.argv[5]) # ex: 2000
+    dataset = sys.argv[1] # what data to learn(ex: donut)
+    hidden_nodes = int(sys.argv[2]) # number of hidden nodes(ex: 4)
+    activation = sys.argv[3] # activation function(ex: sigmoid)
+    lr = float(sys.argv[4]) # learning rate(ex: 0.1)
+    epochs = int(sys.argv[5]) # number of epochs(ex: 10000)
+    check_epoch = int(sys.argv[6]) # plot model every check_epoch epochs(ex: 2000)
 
     # initialize layers
     hidden_layer = lyr.Layer(2, hidden_nodes, activation, lr)
     output_layer = lyr.Layer(hidden_nodes, 1, activation, lr)
     model = [hidden_layer, output_layer]
 
-    # train data and errors
-    train_data_x = [np.array(x).reshape(2, 1) for x in donut_shaped_x]
-    train_data_y = donut_shaped_y
+    # prepare training sample data
+    train_data_x = gate_x
+    if dataset.lower() == 'and':
+        train_data_y = and_gate_y
+    elif dataset.lower() == 'or':
+        train_data_y = or_gate_y
+    elif dataset.lower() == 'xor':
+        train_data_y = xor_gate_y
+    elif dataset.lower() == 'donut':
+        train_data_x = donut_shaped_x
+        train_data_y = donut_shaped_y
+    else:
+        print('Unknown dataset:', dataset)
+        sys.exit(-1)
+
+    # initialize error list
     errors = []
 
     # meshgrid to draw contour
@@ -59,28 +86,29 @@ if __name__ == '__main__':
     contour_num = 1
     def save_contour(num):
         vis.save_contour_plot_nto1(
-            model, f"logs/donut_contour_{num}.png", meshgrid,
-            [np.array(donut_shaped_x), np.array(donut_shaped_y)]
+            model, f"logs/{dataset}_contour_{num}.png", meshgrid,
+            [np.array(train_data_x), np.array(train_data_y)]
         )
 
     # progressbar
     tqdm.write(f'Learning {len(train_data_x)} samples with {epochs} epochs...')
     
+    # a list of input vectors which is ndarray
+    train_input_vectors = [np.array(x).reshape(2, 1) for x in train_data_x]
+
     # learning
     for epoch in (pbar := tqdm(range(epochs))):
         error_sum = 0
 
         # train
-        for x, y in zip(train_data_x, train_data_y):
-            # < forward >
+        for x, y in zip(train_input_vectors, train_data_y):
+            # forward
             output = lyr.forward_all_layers(x, model)
-
-            # < backward >
+            # backward
             # error function Error(y_hat) : 1 / 2 * (y - y_hat)^2
             # derivative of error function : (y - y_hat) * (-1)
             cost_error = output - y
             lyr.backward_all_layers(cost_error, model)
-
             cost = (-cost_error) ** 2 / 2
             error_sum += cost
 
@@ -88,7 +116,7 @@ if __name__ == '__main__':
         errors.append(error_sum)
 
         # save contour
-        if epoch % 5000 == 0:
+        if epoch % check_epoch == 0:
             save_contour(contour_num)
             contour_num += 1
 
@@ -98,9 +126,9 @@ if __name__ == '__main__':
     print(f'Learning finished. error: {error_sum}')
     save_contour(contour_num)
 
-    for x, y in zip(train_data_x, train_data_y):
+    for x, y in zip(train_input_vectors, train_data_y):
         output = lyr.forward_all_layers(x, model)
         print(f'x: {x.T}, y: {y}, y_hat: {output}')
 
-    lyr.save_weights_of_all_layers('logs/donut_weights.txt', model)
-    vis.save_error_graph(np.array(errors).reshape(-1), 'logs/donut_error.png')
+    lyr.save_weights_of_all_layers(f'logs/{dataset}_weights.txt', model)
+    vis.save_error_graph(np.array(errors).reshape(-1), f'logs/{dataset}_error.png')
