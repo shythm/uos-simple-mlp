@@ -6,6 +6,7 @@
 #     -> This code can make an arbitrary number of layers and nodes per layer.
 # (2) Implement the calculation of one layer as a function.
 #     -> This code implements the calculation of one layer as a class.
+# (3) Save the weight to a file in a matrix format
 
 import numpy as np
 from activation import get_activation, get_differential
@@ -183,7 +184,7 @@ class Layer:
         return self.error
 
 # forward propagation with a given layer list
-def forward_all_layers(invec: np.ndarray, layers: list[Layer]) -> np.ndarray:
+def forward_all_layers(invec: np.ndarray, layers: list[Layer], ) -> np.ndarray:
     """
     Performs forward propagation with a given layer list.
 
@@ -216,3 +217,20 @@ def backward_all_layers(cost_error: np.ndarray, layers: list[Layer]) -> None:
     # backward propagation
     for i in range(len(layers) - 1, -1, -1):
         error = layers[i].backward(error)
+
+# save the weight of layers
+def save_weights_of_all_layers(file_name: str, layers: list[Layer]) -> None:
+    """
+    Saves the weights of all layers.
+
+    Args:
+        layers (list): The list of layers.
+    """
+    with open(file_name, 'w') as f:
+        f.write(f"Number of layers: {len(layers)}\n")
+        f.write(f"Input Dimension: {layers[0].weights.shape[1] - 1}\n")
+        f.write("\n")
+        for i, layer in enumerate(layers):
+            f.write(f"Layer [{i}]\n")
+            f.write(str(layer.weights) + "\n")
+            f.write("\n")
