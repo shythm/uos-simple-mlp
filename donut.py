@@ -2,16 +2,9 @@
 # 2023-2 Artificial Intelligence Coding #3
 # Experimental Tasks (2) Use donut shaped data
 
-## Requirements ##
-# (1) Save the weight to a file in a matrix format
-# (2) Show the learning process (X1, X2 two-dimensional straight line graphs).
-#      - Plot straight lines of a few nodes.
-# (3) Show error graph as a function of iteration
-
-import sys
 import numpy as np
-import matplotlib.pyplot as plt
 import layer as lyr
+import visualization as vis
 
 # donut shaped data
 donut_shaped_x = [
@@ -29,51 +22,6 @@ donut_shaped_y = [
     0, 0, 0, 0, 0, 0, 0, 0, 1
 ]
 
-# show the learning process using contour plot (instead of straight line graph)
-def plot_contour(file_name: str, model: list[lyr.Layer]):
-    # create a graph
-    fig = plt.figure(figsize=(8, 8))
-    fig.set_facecolor('white')
-    ax = fig.add_subplot()
-
-    # create x, y axis
-    size = 100
-    x = np.linspace(-0.5, 1.5, size)
-    y = np.linspace(-0.5, 1.5, size)
-    X, Y = np.meshgrid(x, y)
-    
-    # create z axis
-    Z = np.zeros((size, size))
-    for i in range(size):
-        for j in range(size):
-            output = lyr.forward_all_layers(np.array([X[i, j], Y[i, j]]).reshape(2, 1), model)
-            Z[i, j] = output[0, 0]
-
-    # draw contour plot
-    contour1 = ax.contour(X, Y, Z, levels=10, colors='k', linewidths=1, linestyles='--') ## 등고선
-    ax.clabel(contour1, contour1.levels, inline=True) ## contour 라벨
-    
-    # contour2 = ax.contourf(X, Y, Z, levels=256, cmap='jet')
-    # fig.colorbar(contour2, shrink=0.5) ## 컬러바 크기 축소 shrink
-
-    # print donut shaped data
-    points = np.array(donut_shaped_x)
-    ax.scatter(points[:, 0], points[:, 1], c=donut_shaped_y)
-    
-    plt.savefig(file_name)
-
-# show error graph as a function of iteration
-def plot_error_graph(errors: list[float]):
-    # create a new graph
-    fig = plt.figure(figsize=(6, 5)).add_subplot(1, 1, 1)
-    # plot error
-    fig.plot(np.arange(len(errors)), errors)
-    # add labels
-    fig.set_xlabel('epoch')
-    fig.set_ylabel('error')
-    # save the graph
-    plt.savefig('plot_error_graph.png')
-
 if __name__ == '__main__':
 
     # hyperparameters
@@ -86,9 +34,22 @@ if __name__ == '__main__':
     output_layer = lyr.Layer(4, 1, activation, lr)
     model = [hidden_layer, output_layer]
 
+    # train data and errors
     train_data_x = [np.array(x).reshape(2, 1) for x in donut_shaped_x]
     train_data_y = donut_shaped_y
     errors = []
+
+    # meshgrid to draw contour
+    meshgrid_size = (100, 100)
+    x = np.linspace(-0.5, 1.5, meshgrid_size[0])
+    y = np.linspace(-0.5, 1.5, meshgrid_size[1])
+    meshgrid = np.meshgrid(x, y)
+    contour_num = 1
+    def save_contour(num):
+        vis.save_contour_plot_nto1(
+            model, f"logs/donut_contour_{num}.png", meshgrid,
+            [np.array(donut_shaped_x), np.array(donut_shaped_y)]
+        )
 
     for epoch in range(epochs):
         error_sum = 0
@@ -111,18 +72,19 @@ if __name__ == '__main__':
         errors.append(error_sum)
 
         # save contour
-        if epoch % 10000 == 0:
-            plot_contour(f"contour - {int(epoch / 5000)}.png", model)
+        if epoch % 5000 == 0:
+            save_contour(contour_num)
+            contour_num += 1
 
         # test (use the same data)
         print(f'[{epoch + 1}/{epochs}] - error: {error_sum} \r', end="")
 
     print(f'\nLearning finished. error: {error_sum}')
-    plot_contour(f"contour - {int(epochs / 5000)}.png", model)
+    save_contour(contour_num)
 
     for x, y in zip(train_data_x, train_data_y):
         output = lyr.forward_all_layers(x, model)
         print(f'x: {x.T}, y: {y}, y_hat: {output}')
 
-    lyr.save_weights_of_all_layers('weights.txt', model)
-    plot_error_graph(np.array(errors).reshape(-1))
+    lyr.save_weights_of_all_layers('logs/donut_weights.txt', model)
+    vis.save_error_graph(np.array(errors).reshape(-1), 'logs/donut_error.png')
