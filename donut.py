@@ -3,10 +3,10 @@
 # Experimental Tasks (2) Use donut shaped data
 
 ## Requirements ##
-# Save the weight to a file in a matrix format
-# Show the learning process (X1, X2 two-dimensional straight line graphs).
-# Plot straight lines of a few nodes.
-# Show error graph as a function of iteration
+# (1) Save the weight to a file in a matrix format
+# (2) Show the learning process (X1, X2 two-dimensional straight line graphs).
+#      - Plot straight lines of a few nodes.
+# (3) Show error graph as a function of iteration
 
 import sys
 import numpy as np
@@ -30,7 +30,7 @@ donut_shaped_y = [
 ]
 
 # show the learning process using contour plot (instead of straight line graph)
-def plot_contour(model: list[lyr.Layer]):
+def plot_contour(file_name: str, model: list[lyr.Layer]):
     # create a graph
     fig = plt.figure(figsize=(8, 8))
     fig.set_facecolor('white')
@@ -60,14 +60,26 @@ def plot_contour(model: list[lyr.Layer]):
     points = np.array(donut_shaped_x)
     ax.scatter(points[:, 0], points[:, 1], c=donut_shaped_y)
     
-    plt.savefig('plot_contour.png')
+    plt.savefig(file_name)
+
+# show error graph as a function of iteration
+def plot_error_graph(errors: list[float]):
+    # create a new graph
+    fig = plt.figure(figsize=(6, 5)).add_subplot(1, 1, 1)
+    # plot error
+    fig.plot(np.arange(len(errors)), errors)
+    # add labels
+    fig.set_xlabel('epoch')
+    fig.set_ylabel('error')
+    # save the graph
+    plt.savefig('plot_error_graph.png')
 
 if __name__ == '__main__':
 
     # hyperparameters
     lr = 0.2
     activation = 'sigmoid'
-    epochs = 10000
+    epochs = 20000
 
     # initialize layers
     hidden_layer = lyr.Layer(2, 4, activation, lr)
@@ -76,6 +88,7 @@ if __name__ == '__main__':
 
     train_data_x = [np.array(x).reshape(2, 1) for x in donut_shaped_x]
     train_data_y = donut_shaped_y
+    errors = []
 
     for epoch in range(epochs):
         error_sum = 0
@@ -94,13 +107,22 @@ if __name__ == '__main__':
             cost = (-cost_error) ** 2 / 2
             error_sum += cost
 
+        # save errors to show the error graph
+        errors.append(error_sum)
+
+        # save contour
+        if epoch % 10000 == 0:
+            plot_contour(f"contour - {int(epoch / 5000)}.png", model)
+
         # test (use the same data)
         print(f'[{epoch + 1}/{epochs}] - error: {error_sum} \r', end="")
 
     print(f'\nLearning finished. error: {error_sum}')
+    plot_contour(f"contour - {int(epochs / 5000)}.png", model)
 
     for x, y in zip(train_data_x, train_data_y):
         output = lyr.forward_all_layers(x, model)
         print(f'x: {x.T}, y: {y}, y_hat: {output}')
 
-    plot_contour(model)
+    lyr.save_weights_of_all_layers('weights.txt', model)
+    plot_error_graph(np.array(errors).reshape(-1))
