@@ -1,12 +1,18 @@
 # 2019920037 컴퓨터과학부 이성호
 # 2023-2 Artificial Intelligence Coding #3
 
+## Requirements ##
+# (1) Let the number of layers and the number of nodes per layer be variables.
+#     -> This code can make an arbitrary number of layers and nodes per layer.
+# (2) Implement the calculation of one layer as a function.
+#     -> This code implements the calculation of one layer as a class.
+
 import numpy as np
 from activation import get_activation, get_differential
 
 # Layer class
-# It just stores weights of perceptrons.
-# When it calculates the output, it performs matrix multiplication.
+# It stores weights of perceptrons and provides forward and backward propagation.
+# When it calculates the results, it performs matrix multiplication.
 # This is for making it easy to maintain weights and fast to calculate.
 class Layer:
     
@@ -67,7 +73,7 @@ class Layer:
             raise ValueError("The dimension of the input vector is not valid.")
         
         # add bias and set input vector
-        self._invec = np.append(1, invec)
+        self._invec = np.append([[1]], invec, axis=0)
 
     # output vector getter (forward propagation)
     @property
@@ -116,7 +122,7 @@ class Layer:
         #    = delta * sum(wij * dj)
         # -> where zi is the ith pre-activation value of this layer
         # -> where dj is the jth delta of this layer
-        return self.weights.T @ self._delta
+        return self.weights.T[1:] @ self._delta # remove bias
 
     # error vector setter (backward propagation)
     @error.setter
@@ -131,11 +137,14 @@ class Layer:
         """
         # validate dimension of error which is propagated from the "next layer"
         if error.shape != (self._output_dim, 1):
-            raise ValueError("The dimension of the error is not valid.")
+            raise ValueError(
+                "The dimension of the error is not valid."
+                f"It must be ({self._output_dim}, 1). It receives {error.shape}"
+            )
 
-        # set delta of this layer
+        # calculate delta of this layer
         # delta = dL/dz = dL/da * da/dz = error * a'(z)
-        #   -> where a is the result of activation function which forwarded to the next layer
+        #   -> where a is a result of activation function which forwarded to the next layer
         #   -> whose dimension will be (output_dim x 1)
         self._delta = error * self._differential(self._pre_activation)
 
