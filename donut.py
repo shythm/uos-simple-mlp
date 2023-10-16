@@ -2,9 +2,11 @@
 # 2023-2 Artificial Intelligence Coding #3
 # Experimental Tasks (2) Use donut shaped data
 
+import sys
 import numpy as np
 import layer as lyr
 import visualization as vis
+from tqdm import tqdm
 
 # donut shaped data
 donut_shaped_x = [
@@ -23,15 +25,25 @@ donut_shaped_y = [
 ]
 
 if __name__ == '__main__':
+    # validation of arguments
+    if len(sys.argv) != 6:
+        print(f'Usage: python {sys.argv[0]} '
+               '[hidden nodes] [learning rate] [activation] [epochs] [check epoch]')
+        print('Example: python donut.py 4 0.1 sigmoid 10000 2000')
+        print('Available activation functions: sigmoid, relu, step')
+        print('This program learns the given donut shaped data using two-layer perceptron.')
+        sys.exit(-1)
 
-    # hyperparameters
-    lr = 0.2
-    activation = 'sigmoid'
-    epochs = 20000
+    # hyperparameters and variables
+    hidden_nodes = int(sys.argv[1]) # ex: 4
+    lr = float(sys.argv[2]) # ex: 0.1
+    activation = sys.argv[3] # ex: sigmoid
+    epochs = int(sys.argv[4]) # ex: 10000
+    check_epoch = int(sys.argv[5]) # ex: 2000
 
     # initialize layers
-    hidden_layer = lyr.Layer(2, 4, activation, lr)
-    output_layer = lyr.Layer(4, 1, activation, lr)
+    hidden_layer = lyr.Layer(2, hidden_nodes, activation, lr)
+    output_layer = lyr.Layer(hidden_nodes, 1, activation, lr)
     model = [hidden_layer, output_layer]
 
     # train data and errors
@@ -51,7 +63,11 @@ if __name__ == '__main__':
             [np.array(donut_shaped_x), np.array(donut_shaped_y)]
         )
 
-    for epoch in range(epochs):
+    # progressbar
+    tqdm.write(f'Learning {len(train_data_x)} samples with {epochs} epochs...')
+    
+    # learning
+    for epoch in (pbar := tqdm(range(epochs))):
         error_sum = 0
 
         # train
@@ -76,10 +92,10 @@ if __name__ == '__main__':
             save_contour(contour_num)
             contour_num += 1
 
-        # test (use the same data)
-        print(f'[{epoch + 1}/{epochs}] - error: {error_sum} \r', end="")
+        # print error
+        pbar.set_description(f'Error={error_sum[0, 0]:.6f}')
 
-    print(f'\nLearning finished. error: {error_sum}')
+    print(f'Learning finished. error: {error_sum}')
     save_contour(contour_num)
 
     for x, y in zip(train_data_x, train_data_y):
